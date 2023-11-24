@@ -1,0 +1,37 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '2.7.0'
+	id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '11'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation 'com.google.api-client:google-api-client:1.31.1'
+	implementation 'com.google.oauth-client:google-oauth-client:1.31.1'
+	implementation 'com.google.apis:google-api-services-sheets:v4-rev581-1.25.0'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	runtimeOnly 'com.h2database:h2'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+task copyPropertiesFile(type: Copy) {
+	from file('app.properties')
+	into file("${buildDir}/resources/main")
+}
+
+build.dependsOn copyPropertiesFile
