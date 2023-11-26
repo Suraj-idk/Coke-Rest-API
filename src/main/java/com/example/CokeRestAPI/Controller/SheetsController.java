@@ -1,17 +1,12 @@
 package com.example.CokeRestAPI.Controller;
 
-import com.example.CokeRestAPI.Entity.SheetsData;
 import com.example.CokeRestAPI.Service.SheetsService;
 import com.example.CokeRestAPI.Utils.SheetsServiceUtil;
 import com.google.api.services.sheets.v4.Sheets;
-import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
-import com.google.api.services.sheets.v4.model.ValueRange;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.persistence.Access;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.security.GeneralSecurityException;
 import java.util.*;
 
@@ -33,21 +28,7 @@ public class SheetsController {
         }
     }
 
-//    @PostMapping("/write")
-//    public void writeData(@RequestBody SheetsData sheetData) throws IOException {
-//        List<Object> rowData = Arrays.asList(
-//                sheetData.getName(),
-//                sheetData.getPhoneNumber(),
-//                sheetData.getProductName(),
-//                sheetData.getUnits(),
-//                sheetData.getQuantity(),
-//                sheetData.getPrice(),
-//                sheetData.getDateOrdered(),
-//                sheetData.getDeliveryDate()
-//        );
-//
-//        sheetsService.writeToSheet("1V1XuftkU-sVDxptzICYyj7rMyKlpCCiBoUecARuQ0ag", "Data", rowData);
-//    }
+    private final String SpreadSheetId = "1V1XuftkU-sVDxptzICYyj7rMyKlpCCiBoUecARuQ0ag";
 
     @PostMapping("/write")
     public void writeData(
@@ -60,7 +41,13 @@ public class SheetsController {
             @RequestParam String dateOrdered,
             @RequestParam String deliveryDate) throws IOException {
 
+        String orderStatus = "Preparing for dispatch";
+
+        String orderId = sheetsService.generateRandom4Digit();
+
+
         List<Object> rowData = Arrays.asList(
+                orderId,
                 name,
                 phoneNumber,
                 productName,
@@ -68,37 +55,32 @@ public class SheetsController {
                 quantity,
                 price,
                 dateOrdered,
-                deliveryDate
+                deliveryDate,
+                orderStatus
         );
 
-        sheetsService.writeToSheet("1V1XuftkU-sVDxptzICYyj7rMyKlpCCiBoUecARuQ0ag", "Data", rowData);
+        sheetsService.writeToSheet(SpreadSheetId, "Data", rowData);
     }
+
 
     @GetMapping("/read")
     public List<Map<String, Object>> readData(
             @RequestParam String name,
             @RequestParam String phoneNumber) throws IOException {
 
-        String spreadsheetId = "1V1XuftkU-sVDxptzICYyj7rMyKlpCCiBoUecARuQ0ag";
+        String range = "Data!A:J";
 
-        // Data is in the "Data" sheet between A to H columns
-        String range = "Data!A:H";
-
-        List<List<Object>> allData = sheetsService.readFromSheet(spreadsheetId, range);
-
+        List<List<Object>> allData = sheetsService.readFromSheet(SpreadSheetId, range);
         List<Map<String, Object>> result = new ArrayList<>();
 
-        // Ensure there is at least one row in the spreadsheet
         if (allData.isEmpty()) {
             return result;
         }
 
-        // Define the order of columns based on your spreadsheet
         List<String> columnOrder = Arrays.asList(
-                "Name", "Phone Number", "Product Name", "Units", "Quantity", "Price", "Ordered Date", "Est. Delivery Date"
+                "Order Id", "Name", "Phone Number", "Product Name", "Units", "Quantity", "Price", "Ordered Date", "Est. Delivery Date", "Order Status"
         );
 
-        // Extract header row for column names
         List<Object> headerRow = allData.get(0);
 
         for (List<Object> row : allData.subList(1, allData.size())) {
@@ -112,33 +94,36 @@ public class SheetsController {
                 }
             }
 
-            result.add(rowData);
-        }
+            //filter based on name and phoneNumber
+            String rowName = rowData.get("Name").toString();
+            String rowPhoneNumber = rowData.get("Phone Number").toString();
 
+            if (name.equals(rowName) && phoneNumber.equals(rowPhoneNumber) && !"Delivered".equals(rowData.get("Order Status"))) {
+                result.add(rowData);
+            }
+        }
         return result;
     }
 
 
+    @GetMapping("/readByOrderId")
+    public Map<String, Object> readDataByOrderId(@RequestParam String orderId) throws IOException {
+        String range = "Data!A:J";
 
+        List<List<Object>> allData = sheetsService.readFromSheet(SpreadSheetId, range);
+        Map<String, Object> result = new HashMap<>();
 
-//    private List<List<Object>> readFromSheet(String spreadsheetId, String range) throws IOException {
-//        ValueRange response = sheets.spreadsheets().values()
-//                .get(spreadsheetId, range)
-//                .execute();
-//        return response.getValues();
-//    }
+        if (allData.isEmpty()) {
+            return result;
+        }
 
+        List<String> columnOrder = Arrays.asList(
+                "Order Id", "Name", "Phone Number", "Product Name", "Units", "Quantity", "Price", "Ordered Date", "Est. Delivery Date", "Order Status"
+        );
 
+        result = sheetsService.findRowByOrderId(allData, orderId, columnOrder);
 
-//    private void writeToSheet(String spreadsheetId, String range, List<Object> rowData) throws IOException {
-//        ValueRange body = new ValueRange().setValues(Arrays.asList(rowData));
-//        UpdateValuesResponse result = sheetsService.spreadsheets().values()
-//                .update(spreadsheetId, range, body)
-//                .setValueInputOption("RAW")
-//                .execute();
-//        System.out.println("Data written to sheet: " + result);
-//    }
+        // If orderId is not found, return an empty result
+        return result;
+    }
 }
-
-
-//https://docs.google.com/spreadsheets/d/1V1XuftkU-sVDxptzICYyj7rMyKlpCCiBoUecARuQ0ag/edit?usp=sharing

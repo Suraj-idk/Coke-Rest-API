@@ -1,7 +1,6 @@
 package com.example.CokeRestAPI.Entity;
 
 import java.math.BigDecimal;
-import java.util.Date;
 
 public class SheetsData {
 
@@ -12,8 +11,9 @@ public class SheetsData {
     private int quantity;
     private int price;
     private String dateOrdered;
-
     private String deliveryDate;
+    private String orderStatus;
+    private String orderId;
 
     public String getName() {
         return name;
@@ -79,9 +79,17 @@ public class SheetsData {
         this.deliveryDate = deliveryDate;
     }
 
+    public void setOrderStatus(String orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
 
 
-    public SheetsData(String name, BigDecimal phoneNumber, String productName, String units, int quantity, int price, String dateOrdered, String deliveryDate) {
+
+    public SheetsData(String orderId, String name, BigDecimal phoneNumber, String productName, String units, int quantity, int price, String dateOrdered, String deliveryDate, String orderStatus) {
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.productName = productName;
@@ -90,6 +98,8 @@ public class SheetsData {
         this.price = price;
         this.dateOrdered = dateOrdered;
         this.deliveryDate = deliveryDate;
+        this.orderStatus = orderStatus;
+        this.orderId = orderId;
     }
 
 }
