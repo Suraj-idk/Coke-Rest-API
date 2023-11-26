@@ -4,6 +4,7 @@ import com.example.CokeRestAPI.Entity.SheetsData;
 import com.example.CokeRestAPI.Utils.SheetsServiceUtil;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,9 @@ import java.util.*;
 
 @Service
 public class SheetsService {
+
+    @Value("${spreadsheet.id}")
+    private String SpreadSheetId;
 
     private final Sheets sheets;
 
@@ -130,7 +134,7 @@ public class SheetsService {
         System.out.println("Cron Start");
         try {
             // Fetch data directly from Google Sheets
-            ValueRange response = sheets.spreadsheets().values().get("1V1XuftkU-sVDxptzICYyj7rMyKlpCCiBoUecARuQ0ag", "Data!A2:J").execute();
+            ValueRange response = sheets.spreadsheets().values().get(SpreadSheetId, "Data!A2:J").execute();
             List<List<Object>> values = response.getValues();
 
             // Skip if values is null or empty
@@ -157,7 +161,7 @@ public class SheetsService {
                         ValueRange body = new ValueRange().setValues(updateValues);
 
                         sheets.spreadsheets().values()
-                                .update("1V1XuftkU-sVDxptzICYyj7rMyKlpCCiBoUecARuQ0ag", "Data!J" + (values.indexOf(row) + 2), body)
+                                .update(SpreadSheetId, "Data!J" + (values.indexOf(row) + 2), body)
                                 .setValueInputOption("RAW")
                                 .execute();
 
@@ -192,11 +196,34 @@ public class SheetsService {
         }
     }
 
-    public Map<String, Object> findRowByOrderId(List<List<Object>> allData, String orderId, List<String> columnOrder) {
-        Map<String, Object> result = new HashMap<>();
+    public List<Map<String, Object>> findRowsByNameAndNumber(
+            List<List<Object>> allData, String name, String phoneNumber, List<String> columnOrder) {
+        List<Map<String, Object>> result = new ArrayList<>();
 
         for (List<Object> row : allData.subList(1, allData.size())) { // Start from the second row
-            Object firstColumnValue = row.get(0); // Assuming Order Id is in the first column
+            String rowName = row.get(1).toString(); //Name is in the second column
+            String rowPhoneNumber = row.get(2).toString(); // PhoneNumber is in the third column
+
+            // Check if the current row matches the provided name and phoneNumber
+            if (name.equals(rowName) && phoneNumber.equals(rowPhoneNumber)) {
+                Map<String, Object> rowData = new LinkedHashMap<>();
+                for (int i = 0; i < columnOrder.size(); i++) {
+                    String columnName = columnOrder.get(i);
+                    Object columnValue = row.get(i);
+                    rowData.put(columnName, columnValue);
+                }
+                result.add(rowData);
+            }
+        }
+
+        return result;
+    }
+
+    public Map<String, Object> findRowByOrderId(List<List<Object>> allData, String orderId, List<String> columnOrder) {
+        Map<String, Object> result = new LinkedHashMap<>();
+
+        for (List<Object> row : allData.subList(1, allData.size())) { // Start from the second row
+            Object firstColumnValue = row.get(0); // OrderId is in the first column
 
             // Check if the current row matches the provided orderId
             if (orderId.equals(firstColumnValue.toString())) {
@@ -205,10 +232,6 @@ public class SheetsService {
                     Object columnValue = row.get(i);
                     result.put(columnName, columnValue);
                 }
-
-                // Add the "Order Status" based on "Order Date" and "Est. Delivery Date"
-                addOrderStatus(result);
-
                 return result;
             }
         }
@@ -256,8 +279,4 @@ public class SheetsService {
 
         return result;
     }
-
-
-
-
 }
