@@ -4,6 +4,7 @@ import com.example.CokeRestAPI.Service.SheetsService;
 import com.example.CokeRestAPI.Utils.SheetsServiceUtil;
 import com.google.api.services.sheets.v4.Sheets;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -28,7 +29,8 @@ public class SheetsController {
         }
     }
 
-    private final String SpreadSheetId = "1V1XuftkU-sVDxptzICYyj7rMyKlpCCiBoUecARuQ0ag";
+    @Value("${spreadsheet.id}")
+    private String SpreadSheetId;
 
     @PostMapping("/write")
     public void writeData(
@@ -62,12 +64,9 @@ public class SheetsController {
         sheetsService.writeToSheet(SpreadSheetId, "Data", rowData);
     }
 
-
     @GetMapping("/read")
-    public List<Map<String, Object>> readData(
-            @RequestParam String name,
-            @RequestParam String phoneNumber) throws IOException {
-
+    public List<Map<String, Object>> readDataByNameAndNumber(
+            @RequestParam String name, @RequestParam String phoneNumber) throws IOException {
         String range = "Data!A:J";
 
         List<List<Object>> allData = sheetsService.readFromSheet(SpreadSheetId, range);
@@ -78,30 +77,11 @@ public class SheetsController {
         }
 
         List<String> columnOrder = Arrays.asList(
-                "Order Id", "Name", "Phone Number", "Product Name", "Units", "Quantity", "Price", "Ordered Date", "Est. Delivery Date", "Order Status"
+                "OrderId", "Name", "PhoneNumber", "ProductName", "Units", "Quantity", "Price", "OrderedDate", "EstDeliveryDate", "OrderStatus"
         );
 
-        List<Object> headerRow = allData.get(0);
+        result = sheetsService.findRowsByNameAndNumber(allData, name, phoneNumber, columnOrder);
 
-        for (List<Object> row : allData.subList(1, allData.size())) {
-            Map<String, Object> rowData = new LinkedHashMap<>();
-
-            for (String columnName : columnOrder) {
-                int columnIndex = headerRow.indexOf(columnName);
-                if (columnIndex >= 0 && columnIndex < row.size()) {
-                    Object columnValue = row.get(columnIndex);
-                    rowData.put(columnName, columnValue);
-                }
-            }
-
-            //filter based on name and phoneNumber
-            String rowName = rowData.get("Name").toString();
-            String rowPhoneNumber = rowData.get("Phone Number").toString();
-
-            if (name.equals(rowName) && phoneNumber.equals(rowPhoneNumber) && !"Delivered".equals(rowData.get("Order Status"))) {
-                result.add(rowData);
-            }
-        }
         return result;
     }
 
@@ -118,7 +98,7 @@ public class SheetsController {
         }
 
         List<String> columnOrder = Arrays.asList(
-                "Order Id", "Name", "Phone Number", "Product Name", "Units", "Quantity", "Price", "Ordered Date", "Est. Delivery Date", "Order Status"
+                "OrderId", "Name", "PhoneNumber", "ProductName", "Units", "Quantity", "Price", "OrderedDate", "EstDeliveryDate", "OrderStatus"
         );
 
         result = sheetsService.findRowByOrderId(allData, orderId, columnOrder);
