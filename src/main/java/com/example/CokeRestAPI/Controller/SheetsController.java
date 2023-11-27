@@ -5,6 +5,8 @@ import com.example.CokeRestAPI.Utils.SheetsServiceUtil;
 import com.google.api.services.sheets.v4.Sheets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -33,7 +35,7 @@ public class SheetsController {
     private String SpreadSheetId;
 
     @PostMapping("/write")
-    public void writeData(
+    public ResponseEntity<Object> writeData(
             @RequestParam String name,
             @RequestParam String phoneNumber,
             @RequestParam String productName,
@@ -44,28 +46,22 @@ public class SheetsController {
             @RequestParam String deliveryDate) throws IOException {
 
         String orderStatus = "Preparing for dispatch";
-
         String orderId = sheetsService.generateRandom4Digit();
 
-
-        List<Object> rowData = Arrays.asList(
-                orderId,
-                name,
-                phoneNumber,
-                productName,
-                units,
-                quantity,
-                price,
-                dateOrdered,
-                deliveryDate,
-                orderStatus
-        );
-
+        List<Object> rowData = createRowData(orderId, name, phoneNumber, productName, units, quantity, price, dateOrdered, deliveryDate, orderStatus);
         sheetsService.writeToSheet(SpreadSheetId, "Data", rowData);
+
+        // Create and return the JSON response
+        Map<String, Object> jsonResponse = sheetsService.createJsonResponseForWrite(HttpStatus.OK.value(), rowData);
+        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+    }
+
+    private List<Object> createRowData(String orderId, String name, String phoneNumber, String productName, String units, int quantity, int price, String dateOrdered, String deliveryDate, String orderStatus) {
+        return Arrays.asList(orderId, name, phoneNumber, productName, units, quantity, price, dateOrdered, deliveryDate, orderStatus);
     }
 
     @GetMapping("/read")
-    public List<Map<String, Object>> readDataByNameAndNumber(
+    public ResponseEntity<Object> readDataByNameAndNumber(
             @RequestParam String name, @RequestParam String phoneNumber) throws IOException {
         String range = "Data!A:J";
 
@@ -73,7 +69,7 @@ public class SheetsController {
         List<Map<String, Object>> result = new ArrayList<>();
 
         if (allData.isEmpty()) {
-            return result;
+            return new ResponseEntity<>(result, HttpStatus.OK);
         }
 
         List<String> columnOrder = Arrays.asList(
@@ -82,19 +78,18 @@ public class SheetsController {
 
         result = sheetsService.findRowsByNameAndNumber(allData, name, phoneNumber, columnOrder);
 
-        return result;
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-
     @GetMapping("/readByOrderId")
-    public Map<String, Object> readDataByOrderId(@RequestParam String orderId) throws IOException {
+    public ResponseEntity<Object> readDataByOrderId(@RequestParam String orderId) throws IOException {
         String range = "Data!A:J";
 
         List<List<Object>> allData = sheetsService.readFromSheet(SpreadSheetId, range);
         Map<String, Object> result = new HashMap<>();
 
         if (allData.isEmpty()) {
-            return result;
+            return new ResponseEntity<>(result, HttpStatus.OK);
         }
 
         List<String> columnOrder = Arrays.asList(
@@ -104,6 +99,6 @@ public class SheetsController {
         result = sheetsService.findRowByOrderId(allData, orderId, columnOrder);
 
         // If orderId is not found, return an empty result
-        return result;
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

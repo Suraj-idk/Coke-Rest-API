@@ -205,7 +205,7 @@ public class SheetsService {
             String rowPhoneNumber = row.get(2).toString(); // PhoneNumber is in the third column
 
             // Check if the current row matches the provided name and phoneNumber
-            if (name.equals(rowName) && phoneNumber.equals(rowPhoneNumber)) {
+            if (name.equalsIgnoreCase(rowName) && phoneNumber.equalsIgnoreCase(rowPhoneNumber)) {
                 Map<String, Object> rowData = new LinkedHashMap<>();
                 for (int i = 0; i < columnOrder.size(); i++) {
                     String columnName = columnOrder.get(i);
@@ -226,7 +226,7 @@ public class SheetsService {
             Object firstColumnValue = row.get(0); // OrderId is in the first column
 
             // Check if the current row matches the provided orderId
-            if (orderId.equals(firstColumnValue.toString())) {
+            if (orderId.equalsIgnoreCase(firstColumnValue.toString())) {
                 for (int i = 0; i < columnOrder.size(); i++) {
                     String columnName = columnOrder.get(i);
                     Object columnValue = row.get(i);
@@ -278,5 +278,25 @@ public class SheetsService {
         }
 
         return result;
+    }
+
+    public Map<String, Object> createJsonResponseForWrite(int responseCode, List<Object> rowData) {
+        Map<String, Object> dataMap = new LinkedHashMap<>();
+        dataMap.put("OrderId", rowData.get(0));
+        dataMap.put("Name", rowData.get(1));
+        dataMap.put("PhoneNumber", rowData.get(2));
+        dataMap.put("ProductName", rowData.get(3));
+        dataMap.put("Units", rowData.get(4));
+        dataMap.put("Quantity", rowData.get(5));
+        dataMap.put("Price", rowData.get(6));
+        dataMap.put("OrderedDate", rowData.get(7));
+        dataMap.put("EstDeliveryDate", rowData.get(8));
+        dataMap.put("OrderStatus", rowData.get(9));
+
+        Map<String, Object> jsonResponse = new LinkedHashMap<>();
+        jsonResponse.put("responseCode", responseCode);
+        jsonResponse.put("data", dataMap);
+
+        return jsonResponse;
     }
 }
