@@ -198,16 +198,16 @@ public class HealthCareService {
         }
     }
 
-    public List<Map<String, Object>> findRowsByNameAndPhone(
-            List<List<Object>> allData, String name, String phone, List<String> columnOrder) {
+    public List<Map<String, Object>> findRowsByEmailAndPhone(
+            List<List<Object>> allData, String email, String phone, List<String> columnOrder) {
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (List<Object> row : allData.subList(1, allData.size())) { // Start from the second row
-            String rowName = row.get(3).toString(); //Name is in the fourth column
+            String rowEmail = row.get(1).toString(); //Name is in the fourth column
             String rowPhone = row.get(2).toString(); // PhoneNumber is in the third column
 
             // Check if the current row matches the provided name and phoneNumber
-            if (name.equalsIgnoreCase(rowName) && phone.equalsIgnoreCase(rowPhone)) {
+            if (email.equalsIgnoreCase(rowEmail) && phone.equalsIgnoreCase(rowPhone)) {
                 Map<String, Object> rowData = new LinkedHashMap<>();
                 for (int i = 0; i < columnOrder.size(); i++) {
                     String columnName = columnOrder.get(i);
