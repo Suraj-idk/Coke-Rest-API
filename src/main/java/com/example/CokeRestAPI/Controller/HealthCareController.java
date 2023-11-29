@@ -76,7 +76,7 @@ public class HealthCareController {
         }
 
         List<String> columnOrder = Arrays.asList(
-                "Email","Phone","Name","Age","Gender","DOB"
+                "VisitID","Email","Phone","Name","Age","Gender","DOB"
         );
 
         result = healthcareService.findRowsByNameAndPhone(allData, name, phone, columnOrder);
@@ -96,12 +96,29 @@ public class HealthCareController {
         }
 
         List<String> columnOrder = Arrays.asList(
-                "Email","Phone","Name","Age","Gender","DOB"
+                "VisitID","Email","Phone","Name","Age","Gender","DOB"
         );
 
         result = healthcareService.findRowByVisitId(allData, visitId, columnOrder);
 
         // If orderId is not found, return an empty result
         return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+    @PostMapping("/writeDoctorAppointment")
+    public ResponseEntity<Object>writeDoctorAppointment(
+            @RequestParam String visitId,
+            @RequestParam String doctorName,
+            @RequestParam String doctorType,
+            @RequestParam String visitDate) throws IOException {
+
+            List<Object> rowData = createRowData(visitId,doctorName,doctorType,visitDate);
+            healthcareService.writeToDoctorAppointmentSheet(SpreadSheetId, "HealthCare_Dr_Appointmnet", rowData);
+
+            // Create and return the JSON response
+            Map<String, Object> jsonResponse = healthcareService.createJsonResponseForDrAppointment(HttpStatus.OK.value(), rowData);
+            return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+        }
+    private List<Object> createRowData(String visitId,String doctorName,String doctorType,String visitDate) {
+        return Arrays.asList(visitId, doctorName, doctorType, visitDate);
     }
 }

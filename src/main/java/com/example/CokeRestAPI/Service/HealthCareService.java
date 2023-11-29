@@ -297,4 +297,44 @@ public class HealthCareService {
 
         return jsonResponse;
     }
+    public void writeToDoctorAppointmentSheet(String spreadsheetId, String sheetName, List<Object> rowData) throws IOException {
+        // Get the current values in the sheet
+        String range=sheetName+"!A:D";
+        ValueRange existingData = sheets.spreadsheets().values()
+                .get(spreadsheetId, range)
+                .execute();
+
+        // Calculate the next available row number
+        int nextRow = 1;
+        if (existingData.getValues() != null) {
+            nextRow = existingData.getValues().size() + 1;
+        }
+
+        // Set the new range to append data to the next row
+        range =sheetName+ "!A" + nextRow + ":D" + nextRow;
+
+        // Prepare the body for the update
+        ValueRange body = new ValueRange().setValues(Arrays.asList(rowData));
+
+        // Update the spreadsheet
+        UpdateValuesResponse result = sheets.spreadsheets().values()
+                .update(spreadsheetId, range, body)
+                .setValueInputOption("RAW")
+                .execute();
+
+        System.out.println("Data written to sheet: " + result);
+    }
+    public Map<String, Object> createJsonResponseForDrAppointment(int responseCode, List<Object> rowData) {
+        Map<String, Object> dataMap = new LinkedHashMap<>();
+        dataMap.put("VisitID", rowData.get(0));
+        dataMap.put("doctorName", rowData.get(1));
+        dataMap.put("doctorType", rowData.get(2));
+        dataMap.put("visitDate", rowData.get(3));
+
+        Map<String, Object> jsonResponse = new LinkedHashMap<>();
+        jsonResponse.put("responseCode", responseCode);
+        jsonResponse.put("data", dataMap);
+
+        return jsonResponse;
+    }
 }
