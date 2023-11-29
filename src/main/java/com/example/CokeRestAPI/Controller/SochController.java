@@ -43,10 +43,9 @@ public class SochController {
             @RequestParam String email,
             @RequestParam String address) throws IOException {
 
-        String orderStatus = "Preparing for Dispatch";
-        String orderId = sochService.generateRandom4Digit();
+        String customerId = sochService.generateRandom4Digit();
 
-        List<Object> rowData = createRowData(orderId, name, phoneNumber, email, address);
+        List<Object> rowData = createRowData(customerId, name, phoneNumber, email, address);
         sochService.writeToSheet(SpreadSheetId, "Soch_Sheet", rowData);
 
         // Create and return the JSON response
@@ -71,30 +70,106 @@ public class SochController {
         }
 
         List<String> columnOrder = Arrays.asList(
-                "OrderId", "Name", "PhoneNumber", "email", "address");
+                "CustomerId", "Name", "PhoneNumber", "email", "address");
 
         result = sochService.findRowsByContact(allData, phoneNumber, columnOrder);
             return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-//    @GetMapping("/readByOrderId")
-//    public ResponseEntity<Object> readDataByOrderId(@RequestParam String orderId) throws IOException {
-//        String range = "Data!A:J";
-//
-//        List<List<Object>> allData = sochService.readFromSheet(SpreadSheetId, range);
-//        Map<String, Object> result = new HashMap<>();
-//
-//        if (allData.isEmpty()) {
-//            return new ResponseEntity<>(result, HttpStatus.OK);
-//        }
-//
-//        List<String> columnOrder = Arrays.asList(
-//                "OrderId", "Name", "PhoneNumber", "ProductName", "Units", "Quantity", "Price", "OrderedDate", "EstDeliveryDate", "OrderStatus"
-//        );
-//
-//        result = sochService.findRowByOrderId(allData, orderId, columnOrder);
-//
-//        // If orderId is not found, return an empty result
-//        return new ResponseEntity<>(result, HttpStatus.OK);
-//    }
+    @PostMapping("/writeOrderDetails")
+    public ResponseEntity<Object> writeDataToProductSheet(
+            @RequestParam String customerId ,
+            @RequestParam String productName,
+            @RequestParam String price,
+            @RequestParam String quantity) throws IOException {
+
+        String orderStatus = "Preparing for Dispatch";
+        String orderId = sochService.generateRandom4DigitForOrderId();
+        String cancelOrder = "False";
+        String returnOrder = "False";
+
+        List<Object> rowData = createRowDataForProductSheet(customerId, orderId, productName, price, quantity,orderStatus, returnOrder, cancelOrder);
+        sochService.writeInProductSheet(SpreadSheetId, "Soch_Products", rowData);
+
+        Map<String, Object> jsonResponse = sochService.createJsonResponseForWriteInProductSheet(HttpStatus.OK.value(), rowData);
+        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+    }
+
+    private List<Object> createRowDataForProductSheet(String customerId, String orderId, String productName, String price, String quantity, String orderStatus, String returnOrder, String cancelOrder ) {
+        return Arrays.asList(customerId, orderId, productName, price, quantity,orderStatus, returnOrder, cancelOrder);
+    }
+
+    @GetMapping("/readOrderId")
+    public ResponseEntity<Object> readDataByOrderId(@RequestParam String orderId) throws IOException {
+        String range = "Soch_Products!A:H";
+
+        List<List<Object>> allData = sochService.readFromProductSheet(SpreadSheetId, range);
+        Map<String, Object> result = new HashMap<>();
+
+        if (allData.isEmpty()) {
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        }
+
+        List<String> columnOrder = Arrays.asList(
+                "customerId", "orderId", "productName", "price", "quantity","orderStatus", "returnOrder", "cancelOrder"
+        );
+
+        result = sochService.findRowByOrderIdForProductSheet(allData, orderId, columnOrder);
+
+        // If orderId is not found, return an empty result
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @PostMapping("/cancelOrder")
+    public ResponseEntity<String> cancelOrder(@RequestParam String orderId) {
+        String range = "Soch_Products";
+        try {
+            List<List<Object>> allData = sochService.readFromProductSheet(SpreadSheetId, range);
+            List<String> columnOrder = Arrays.asList(
+                    "customerId", "orderId", "productName", "price", "quantity", "orderStatus", "returnOrder", "cancelOrder"
+            );
+
+            sochService.setCancelOrderTrue(allData, orderId, columnOrder);
+
+            // Update the spreadsheet with the modified data
+            for (List<Object> rowData : allData) {
+                sochService.writeInProductSheet(SpreadSheetId, range, rowData);
+            }
+
+            return new ResponseEntity<>("Order canceled successfully.", HttpStatus.OK);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new ResponseEntity<>("Failed to cancel order."+ e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/readCustomerId")
+    public ResponseEntity<Object> readDataByCustomerId(@RequestParam String customerId) throws IOException {
+        String range = "Soch_Products!A:H";
+
+        List<List<Object>> allData = sochService.readFromProductSheet(SpreadSheetId, range);
+        Map<String, Object> result = new HashMap<>();
+
+        if (allData.isEmpty()) {
+            result.put("rowCount", 0);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        }
+
+        List<String> columnOrder = Arrays.asList(
+                "customerId", "orderId", "productName", "price", "quantity", "orderStatus", "returnOrder", "cancelOrder"
+        );
+
+        List<Map<String, Object>> matchingRows = sochService.findRowsByCustomerIdForProductSheet(allData, customerId, columnOrder);
+
+        result.put("rowCount", matchingRows.size());
+        result.put("data", matchingRows); // Add the matching rows to the result
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+
+
+
+
+
 }
