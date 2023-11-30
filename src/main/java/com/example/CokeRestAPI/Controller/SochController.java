@@ -201,8 +201,6 @@ public class SochController {
         return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
     }
 
-
-
     @PostMapping("/updateDetails")
     public ResponseEntity<Object> updateDetailsByCustomerId(
             @RequestParam String customerId,
@@ -211,9 +209,9 @@ public class SochController {
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String address) throws IOException {
 
-        String range = "Soch_Products!A:H";
+        String range = "Soch_Sheet!A:E";
 
-        List<List<Object>> allData = sochService.readFromProductSheet(SpreadSheetId, range);
+        List<List<Object>> allData = sochService.readFromSheet(SpreadSheetId, range);
         Map<String, Object> result = new LinkedHashMap<>();
 
         if (allData.isEmpty()) {
@@ -222,28 +220,75 @@ public class SochController {
         }
 
         List<String> columnOrder = Arrays.asList(
-                "customerId", "orderId", "productName", "price", "quantity", "orderStatus", "returnOrder", "cancelOrder"
+                "Customer id", "User Name", "Contact Number", "Email Id", "Address"
         );
 
-        // Find the row by customerId
         for (List<Object> row : allData.subList(1, allData.size())) { // Start from the second row
             Object currentCustomerId = row.get(0); // customerId is in the first column
 
             if (customerId.equalsIgnoreCase(currentCustomerId.toString()))
             {
-                // Update details if provided in the request
                 if (username != null) {
-                    row.set(columnOrder.indexOf("username"), username);
+                    row.set(columnOrder.indexOf("User Name"), username);
                 }
                 if (contactNumber != null) {
-                    row.set(columnOrder.indexOf("contactNumber"), contactNumber);
+                    row.set(columnOrder.indexOf("Contact Number"), contactNumber);
                 }
                 if (email != null) {
-                    row.set(columnOrder.indexOf("email"), email);
+                    row.set(columnOrder.indexOf("Email Id"), email);
                 }
                 if (address != null) {
-                    row.set(columnOrder.indexOf("address"), address);
+                    row.set(columnOrder.indexOf("Address"), address);
                 }
+
+                // Update the spreadsheet with the modified data
+                sochService.updateProductSheetRow(SpreadSheetId, range, allData);
+
+                // Prepare the response with the updated details
+                result.put("customerId", row.get(columnOrder.indexOf("Customer id")));
+                result.put("userName", row.get(columnOrder.indexOf("User Name")));
+                result.put("contactNumber", row.get(columnOrder.indexOf("Contact Number")));
+                result.put("email", row.get(columnOrder.indexOf("Email Id")));
+                result.put("address", row.get(columnOrder.indexOf("Address")));
+                result.put("message", "Customer details updated successfully.");
+
+                return new ResponseEntity<>(result, HttpStatus.OK);
+            }
+        }
+
+        result.put("message", "Customer details not found or cannot be updated.");
+        return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
+    }
+
+    @PostMapping("/updateReturnOrder")
+    public ResponseEntity<Object> updateReturnOrder(
+            @RequestParam String orderId) throws IOException {
+
+        String range = "Soch_Products!A:H";
+
+        List<List<Object>> allData = sochService.readFromProductSheet(SpreadSheetId, range);
+        Map<String, Object> result = new LinkedHashMap<>(); // Use LinkedHashMap to maintain the insertion order
+
+        if (allData.isEmpty()) {
+            result.put("message", "No orders found.");
+            return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
+        }
+
+        List<String> columnOrder = Arrays.asList(
+                "customerId", "orderId", "productName", "price", "quantity", "orderStatus", "returnOrder", "cancelOrder"
+        );
+
+        // Find the row by orderId
+        for (List<Object> row : allData.subList(1, allData.size())) { // Start from the second row
+            Object currentOrderId = row.get(1); // orderId is in the second column
+
+            if (orderId.equalsIgnoreCase(currentOrderId.toString())
+                    && "delivered".equalsIgnoreCase(row.get(columnOrder.indexOf("orderStatus")).toString())
+                    && !"True".equalsIgnoreCase(String.valueOf(row.get(columnOrder.indexOf("cancelOrder"))))
+                    && !"True".equalsIgnoreCase(String.valueOf(row.get(columnOrder.indexOf("returnOrder"))))) {
+
+                // Update returnOrder status to true
+                row.set(columnOrder.indexOf("returnOrder"), "True");
 
                 // Update the spreadsheet with the modified data
                 sochService.updateProductSheetRow(SpreadSheetId, range, allData);
@@ -257,21 +302,13 @@ public class SochController {
                 result.put("orderStatus", row.get(columnOrder.indexOf("orderStatus")));
                 result.put("returnOrder", row.get(columnOrder.indexOf("returnOrder")));
                 result.put("cancelOrder", row.get(columnOrder.indexOf("cancelOrder")));
-                result.put("message", "Customer details updated successfully.");
+                result.put("message", "Return order updated successfully.");
 
                 return new ResponseEntity<>(result, HttpStatus.OK);
             }
         }
 
-        result.put("message", "Customer details not found or cannot be updated.");
+        result.put("message", "Order not found, not delivered, or return order cannot be updated.");
         return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
     }
-
-
-
-
-
-
-
-
 }
