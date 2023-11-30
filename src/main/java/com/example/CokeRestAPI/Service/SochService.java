@@ -109,25 +109,7 @@ public class SochService {
 
         return result;
     }
-//    public Map<String, Object> findRowByOrderId(List<List<Object>> allData, String orderId, List<String> columnOrder) {
-//        Map<String, Object> result = new LinkedHashMap<>();
-//
-//        for (List<Object> row : allData.subList(1, allData.size())) { // Start from the second row
-//            Object firstColumnValue = row.get(0); // OrderId is in the first column
-//
-//            // Check if the current row matches the provided orderId
-//            if (orderId.equalsIgnoreCase(firstColumnValue.toString())) {
-//                for (int i = 0; i < columnOrder.size(); i++) {
-//                    String columnName = columnOrder.get(i);
-//                    Object columnValue = row.get(i);
-//                    result.put(columnName, columnValue);
-//                }
-//                return result;
-//            }
-//        }
-//
-//        return result;
-//    }
+
     public Map<String, Object> createJsonResponseForWrite(int responseCode, List<Object> rowData) {
         Map<String, Object> dataMap = new LinkedHashMap<>();
         dataMap.put("OrderId", rowData.get(0));
@@ -226,21 +208,13 @@ public class SochService {
         return result;
     }
 
-    public void setCancelOrderTrue(List<List<Object>> allData, String orderId, List<String> columnOrder) {
-        for (List<Object> row : allData.subList(1, allData.size())) { // Start from the second row
-            Object orderIdValue = row.get(columnOrder.indexOf("orderId"));
-            Object orderStatusValue = row.get(columnOrder.indexOf("orderStatus"));
-            Object returnOrderValue = row.get(columnOrder.indexOf("returnOrder"));
-
-            if (orderId.equalsIgnoreCase(orderIdValue.toString())
-                    && ("preparing for dispatch".equalsIgnoreCase(orderStatusValue.toString())
-                    || "dispatched".equalsIgnoreCase(orderStatusValue.toString()))
-                    && !Boolean.TRUE.equals(returnOrderValue)) {
-
-                int cancelOrderIndex = columnOrder.indexOf("cancelOrder");
-                row.set(cancelOrderIndex, true);
-            }
-        }
+    public void updateProductSheetRow(String spreadsheetId, String range, List<List<Object>> updatedData) throws IOException {
+        ValueRange body = new ValueRange().setValues(updatedData);
+        UpdateValuesResponse result = sheets.spreadsheets().values()
+                .update(spreadsheetId, range, body)
+                .setValueInputOption("RAW")
+                .execute();
+        System.out.println("Data updated in Product sheet: " + result);
     }
 
 
