@@ -45,7 +45,7 @@ public class SheetsController {
             @RequestParam String dateOrdered,
             @RequestParam String deliveryDate) throws IOException {
 
-        String orderStatus = "Preparing for dispatch";
+        String orderStatus = "Preparing for Dispatch";
         String orderId = sheetsService.generateRandom4Digit();
 
         List<Object> rowData = createRowData(orderId, name, phoneNumber, productName, units, quantity, price, dateOrdered, deliveryDate, orderStatus);

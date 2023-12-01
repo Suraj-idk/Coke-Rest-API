@@ -64,8 +64,8 @@ public class HealthCareController {
     }
 
     @GetMapping("/read")
-    public ResponseEntity<Object> readDataByNameAndNumber(
-            @RequestParam String name, @RequestParam String phone) throws IOException {
+    public ResponseEntity<Object> readDataByEmailAndNumber(
+            @RequestParam String email, @RequestParam String phone) throws IOException {
         String range = "HealthCare_Sheet!A:G";
 
         List<List<Object>> allData = healthcareService.readFromSheet(SpreadSheetId, range);
@@ -79,7 +79,7 @@ public class HealthCareController {
                 "VisitID","Email","Phone","Name","Age","Gender","DOB"
         );
 
-        result = healthcareService.findRowsByNameAndPhone(allData, name, phone, columnOrder);
+        result = healthcareService.findRowsByEmailAndPhone(allData, email, phone, columnOrder);
 
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -120,5 +120,37 @@ public class HealthCareController {
         }
     private List<Object> createRowData(String visitId,String doctorName,String doctorType,String visitDate) {
         return Arrays.asList(visitId, doctorName, doctorType, visitDate);
+    }
+
+    @PostMapping("/writePrescription")
+    public ResponseEntity<Object> writePrescriptionUrl(
+            @RequestParam String visitId,
+            @RequestParam String prescriptionUrl) throws IOException {
+
+        // Ensure that visitId is provided
+        if (visitId == null || visitId.isEmpty()) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "VisitId cannot be null or empty");
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
+
+        // Check if the visitId exists in the sheet
+        String range = "HealthCare_Sheet!A:H"; // Adjusted to cover columns A to H
+        List<List<Object>> allData = healthcareService.readFromSheet(SpreadSheetId, range);
+        boolean visitIdExists = healthcareService.visitIdExists(allData, visitId);
+
+        if (!visitIdExists) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "VisitId not found");
+            return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+        }
+
+        // Write the prescriptionUrl to the sheet
+        List<Object> rowData = Collections.singletonList(prescriptionUrl);
+        healthcareService.writePrescriptionUrl(SpreadSheetId, "HealthCare_Sheet", visitId, rowData);
+
+        // Create and return the JSON response
+        Map<String, Object> jsonResponse = healthcareService.createJsonResponseForWritePrescription(HttpStatus.OK.value(), rowData);
+        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
 }
