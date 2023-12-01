@@ -35,7 +35,6 @@ public class HealthCareService {
         return response.getValues();
     }
 
-
     public void writeToSheet(String spreadsheetId, String sheetName, List<Object> rowData) throws IOException {
         // Get the current values in the sheet
         String range=sheetName+"!A:G";
@@ -64,138 +63,20 @@ public class HealthCareService {
         System.out.println("Data written to sheet: " + result);
     }
 
-    public void addOrderStatus(Map<String, Object> rowData) {
-        String orderDateStr = (String) rowData.get("Ordered Date");
-        String deliveryDateStr = (String) rowData.get("Est. Delivery Date");
-
-        if (orderDateStr != null && deliveryDateStr != null) {
-            try {
-                // Parse date strings into Date objects
-                SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
-                Date orderDate = dateFormat.parse(orderDateStr);
-                Date deliveryDate = dateFormat.parse(deliveryDateStr);
-
-                // Get today's date
-                Date today = new Date();
-
-                // Determine the order status based on the logic
-                String orderStatus = "";
-
-                if (isSameDay(today, orderDate)) {
-                    orderStatus = "Preparing for Dispatch";
-                } else if (today.before(addDays(orderDate, 1))) {
-                    orderStatus = "Dispatched";
-                } else if (today.before(addDays(orderDate, 2))) {
-                    orderStatus = "In Transit";
-                } else if (today.before(addDays(orderDate, 3))) {
-                    orderStatus = "In Transit";
-                } else if (today.before(addDays(orderDate, 4))) {
-                    orderStatus = "Shipped";
-                } else if (today.equals(deliveryDate)) {
-                    orderStatus = "Out for Delivery";
-                } else {
-                    orderStatus = "Delivered";
-                }
-
-                rowData.put("Order Status", orderStatus);
-
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public boolean isSameDay(Date date1, Date date2) {
-        Calendar cal1 = Calendar.getInstance();
-        cal1.setTime(date1);
-        Calendar cal2 = Calendar.getInstance();
-        cal2.setTime(date2);
-        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH) &&
-                cal1.get(Calendar.DAY_OF_MONTH) == cal2.get(Calendar.DAY_OF_MONTH);
-    }
-
-    // Helper method to add days to a Date
-    public Date addDays(Date date, int days) {
-        long timeInMillis = date.getTime();
-        timeInMillis += days * 24 * 60 * 60 * 1000; // Convert days to milliseconds
-        return new Date(timeInMillis);
-    }
     public String generateRandom4Digit() {
         Random random = new Random();
         int random4DigitNumber = 1000 + random.nextInt(9999);
-        Date currentDate = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd");
-        String formattedDate = dateFormat.format(currentDate);
-        return random4DigitNumber + formattedDate;
+
+        char randomChar1 = generateRandomUppercaseLetter();
+        char randomChar2 = generateRandomUppercaseLetter();
+
+        return String.valueOf(random4DigitNumber) + randomChar1 + randomChar2;
     }
 
-
-    @Scheduled(cron = "0 0 10 * * *") // Every day at 10AM
-    public void updateOrderStatus() {
-        System.out.println("Cron Start");
-        try {
-            // Fetch data directly from Google Sheets
-            ValueRange response = sheets.spreadsheets().values().get(SpreadSheetId, "Data!A2:J").execute();
-            List<List<Object>> values = response.getValues();
-
-            // Skip if values is null or empty
-            if (values == null || values.isEmpty()) {
-                return;
-            }
-
-            // Update order status for each row
-            for (List<Object> row : values) {
-                String orderId = (String) row.get(0); // Assuming OrderId is in the first column (column A)
-
-                if (orderId != null && !orderId.isEmpty()) {
-                    String orderDateStr = (String) row.get(7);
-                    String deliveryDateStr = (String) row.get(8);
-
-                    try {
-                        Date orderDate = new SimpleDateFormat("dd-MM-yyyy").parse(orderDateStr);
-                        Date deliveryDate = new SimpleDateFormat("dd-MM-yyyy").parse(deliveryDateStr);
-
-                        String orderStatus = calculateOrderStatus(orderDate, deliveryDate);
-
-                        // Order Status column is in the last column (column J)
-                        List<List<Object>> updateValues = List.of(List.of(orderStatus));
-                        ValueRange body = new ValueRange().setValues(updateValues);
-
-                        sheets.spreadsheets().values()
-                                .update(SpreadSheetId, "Data!J" + (values.indexOf(row) + 2), body)
-                                .setValueInputOption("RAW")
-                                .execute();
-
-                    } catch (ParseException e) {
-                        e.printStackTrace();
-                    }
-
-                }
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println("Cron end");
-    }
-
-    private String calculateOrderStatus(Date orderDate, Date deliveryDate) {
-        Date today = new Date();
-
-        if (isSameDay(today, orderDate)) {
-            return "Preparing for Dispatch";
-        } else if (today.before(addDays(orderDate, 1))) {
-            return "Dispatched";
-        } else if (today.before(addDays(orderDate, 2)) || today.before(addDays(orderDate, 3))) {
-            return "In Transit";
-        } else if (today.before(addDays(orderDate, 4))) {
-            return "Shipped";
-        } else if (today.equals(deliveryDate)) {
-            return "Out for Delivery";
-        } else {
-            return "Delivered";
-        }
+    private static char generateRandomUppercaseLetter() {
+        Random random = new Random();
+        char randomChar = (char) (random.nextInt(26) + 'A'); // Uppercase letters
+        return randomChar;
     }
 
     public List<Map<String, Object>> findRowsByEmailAndPhone(
@@ -335,6 +216,55 @@ public class HealthCareService {
         jsonResponse.put("responseCode", responseCode);
         jsonResponse.put("data", dataMap);
 
+        return jsonResponse;
+    }
+
+    public void updateRowData(String spreadsheetId, String range, int rowIndex, List<Object> rowData) throws IOException {
+        ValueRange body = new ValueRange().setValues(Collections.singletonList(rowData));
+        UpdateValuesResponse result = sheets.spreadsheets().values()
+                .update(spreadsheetId, range + rowIndex, body)
+                .setValueInputOption("RAW")
+                .execute();
+    }
+    public void writePrescriptionUrl(String spreadsheetId, String sheetName, String visitId, List<Object> rowData) throws IOException {
+        String range = sheetName + "!H:H"; //PrescriptionUrl is in the 8th column (H)
+        int rowIndex = findRowIndexByVisitId(spreadsheetId, sheetName, visitId);
+
+        if (rowIndex != -1) {
+            updateRowData(spreadsheetId, range, rowIndex, rowData);
+        } else {
+            throw new RuntimeException("VisitId not found");
+        }
+    }
+
+    public int findRowIndexByVisitId(String spreadsheetId, String sheetName, String visitId) throws IOException {
+        String range = sheetName + "!A:A"; // Assuming VisitID is in the 1st column (A)
+        List<List<Object>> allData = readFromSheet(spreadsheetId, range);
+
+        for (int i = 0; i < allData.size(); i++) {
+            List<Object> row = allData.get(i);
+            if (row.size() > 0 && row.get(0).toString().equals(visitId)) {
+                return i + 1; // Adding 1 because sheet row index starts from 1
+            }
+        }
+
+        return -1; // VisitId not found
+    }
+
+    public boolean visitIdExists(List<List<Object>> allData, String visitId) {
+        for (List<Object> row : allData) {
+            if (row.size() > 0 && row.get(0).toString().equals(visitId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Map<String, Object> createJsonResponseForWritePrescription(int statusCode, List<Object> rowData) {
+        Map<String, Object> jsonResponse = new HashMap<>();
+        jsonResponse.put("status", statusCode);
+        jsonResponse.put("message", "PrescriptionUrl successfully added");
+        jsonResponse.put("data", rowData);
         return jsonResponse;
     }
 }
