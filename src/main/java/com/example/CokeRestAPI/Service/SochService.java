@@ -217,7 +217,7 @@ public class SochService {
         System.out.println("Data updated in Product sheet: " + result);
     }
 
-//    @Scheduled(cron = "0 0/15 * * * *")
+    @Scheduled(cron = "0 0/15 * * * *")
     public void updateOrderStatusForSoch() {
         System.out.println("Cron Start");
         try {
