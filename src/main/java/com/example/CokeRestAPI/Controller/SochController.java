@@ -101,7 +101,7 @@ public class SochController {
         return Arrays.asList(customerId, orderId, productName, price, quantity,orderStatus, returnOrder, cancelOrder);
     }
 
-    @GetMapping("/readOrderId")
+    @GetMapping("/readOrderByOrderId")
     public ResponseEntity<Object> readDataByOrderId(@RequestParam String orderId) throws IOException {
         String range = "Soch_Products!A:H";
 
@@ -122,15 +122,15 @@ public class SochController {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    @GetMapping("/readCustomerId")
+    @GetMapping("/readOrderByCustomerId")
     public ResponseEntity<Object> readDataByCustomerId(@RequestParam String customerId) throws IOException {
         String range = "Soch_Products!A:H";
 
         List<List<Object>> allData = sochService.readFromProductSheet(SpreadSheetId, range);
-        Map<String, Object> result = new HashMap<>();
+        List<Map<String, Object>> result = new ArrayList<>();
 
         if (allData.isEmpty()) {
-            result.put("rowCount", 0);
+//            result.put("rowCount", 0);
             return new ResponseEntity<>(result, HttpStatus.OK);
         }
 
@@ -140,8 +140,10 @@ public class SochController {
 
         List<Map<String, Object>> matchingRows = sochService.findRowsByCustomerIdForProductSheet(allData, customerId, columnOrder);
 
-        result.put("rowCount", matchingRows.size());
-        result.put("data", matchingRows); // Add the matching rows to the result
+
+        result.addAll(matchingRows);
+//        result.put("rowCount", matchingRows.size());
+//        result.put("data", matchingRows); // Add the matching rows to the result
 
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -173,9 +175,10 @@ public class SochController {
 
                 // Update cancelOrder status to true
                 row.set(columnOrder.indexOf("cancelOrder"), "True");
+                row.set(columnOrder.indexOf("orderStatus"), "Order Cancelled");
 
                 // Update the spreadsheet with the modified data
-                sochService.updateProductSheetRow(SpreadSheetId, range, allData);
+                sochService.updateSheet(SpreadSheetId, range, allData);
 
 //                // Prepare the response
 //                for (int i = 0; i < columnOrder.size(); i++) {
@@ -242,7 +245,7 @@ public class SochController {
                 }
 
                 // Update the spreadsheet with the modified data
-                sochService.updateProductSheetRow(SpreadSheetId, range, allData);
+                sochService.updateSheet(SpreadSheetId, range, allData);
 
                 // Prepare the response with the updated details
                 result.put("customerId", row.get(columnOrder.indexOf("Customer id")));
@@ -289,9 +292,10 @@ public class SochController {
 
                 // Update returnOrder status to true
                 row.set(columnOrder.indexOf("returnOrder"), "True");
+                row.set(columnOrder.indexOf("orderStatus"), "Order Returned");
 
                 // Update the spreadsheet with the modified data
-                sochService.updateProductSheetRow(SpreadSheetId, range, allData);
+                sochService.updateSheet(SpreadSheetId, range, allData);
 
                 // Prepare the response with the updated details
                 result.put("customerId", row.get(columnOrder.indexOf("customerId")));
@@ -311,4 +315,37 @@ public class SochController {
         result.put("message", "Order not found, not delivered, or return order cannot be updated.");
         return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
     }
+
+    @GetMapping("/readProductList")
+    public ResponseEntity<Object> readProductList() throws IOException {
+        String range = "Soch_Products_List!A:C";
+
+        List<List<Object>> allData = sochService.readFromSheet(SpreadSheetId, range);
+        Map<String, Object> result = new HashMap<>();
+
+        if (allData.isEmpty()) {
+            result.put("rowCount", 0);
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        }
+
+        List<String> columnOrder = Arrays.asList(
+                "ProductNumber", "ProductName", "Price"
+        );
+
+        List<Map<String, Object>> formattedData = new ArrayList<>();
+        for (int rowIndex = 1; rowIndex < allData.size(); rowIndex++) {
+            List<Object> row = allData.get(rowIndex);
+            Map<String, Object> rowData = new HashMap<>();
+            for (int i = 0; i < columnOrder.size(); i++) {
+                rowData.put(columnOrder.get(i), row.get(i));
+            }
+            formattedData.add(rowData);
+        }
+
+        result.put("rowCount", formattedData.size());
+        result.put("data", formattedData); // Add the formatted data to the result
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
 }
