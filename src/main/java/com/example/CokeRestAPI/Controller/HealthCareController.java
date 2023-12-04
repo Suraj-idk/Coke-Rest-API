@@ -65,7 +65,7 @@ public class HealthCareController {
 
     @GetMapping("/read")
     public ResponseEntity<Object> readDataByEmailAndNumber(
-            @RequestParam String email, @RequestParam String phone) throws IOException {
+            @RequestParam String email, @RequestParam String phone, @RequestParam String name) throws IOException {
         String range = "HealthCare_Sheet!A:G";
 
         List<List<Object>> allData = healthcareService.readFromSheet(SpreadSheetId, range);
@@ -79,7 +79,7 @@ public class HealthCareController {
                 "VisitID","Email","Phone","Name","Age","Gender","DOB"
         );
 
-        result = healthcareService.findRowsByEmailAndPhone(allData, email, phone, columnOrder);
+        result = healthcareService.findRowsByEmailAndPhone(allData, email, phone, name, columnOrder);
 
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
