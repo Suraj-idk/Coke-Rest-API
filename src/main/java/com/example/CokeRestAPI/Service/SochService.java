@@ -112,7 +112,7 @@ public class SochService {
 
     public Map<String, Object> createJsonResponseForWrite(int responseCode, List<Object> rowData) {
         Map<String, Object> dataMap = new LinkedHashMap<>();
-        dataMap.put("OrderId", rowData.get(0));
+        dataMap.put("customerId", rowData.get(0));
         dataMap.put("Name", rowData.get(1));
         dataMap.put("PhoneNumber", rowData.get(2));
         dataMap.put("email", rowData.get(3));
@@ -271,6 +271,22 @@ public class SochService {
         }
     }
 
+    public boolean isPhoneNumberOrEmailAlreadyExists(String phoneNumber, String email) throws IOException {
+        List<List<Object>> allData = readFromSheet(SpreadSheetId, "Soch_Sheet");
+
+        for (List<Object> row : allData) {
+            if (row.size() >= 3) {
+                String existingPhoneNumber = row.get(2).toString(); // phonenumber is in 3rd Column (i.e C)
+                String existingEmail = row.get(3).toString(); // email-id is in 4th Column (i.e D)
+
+                if (phoneNumber.equals(existingPhoneNumber) || email.equals(existingEmail)) {
+                    return true; // Match found
+                }
+            }
+        }
+        return false; // No match found
+    }
+
 //-------------------------------------------------------------------------------------Yet to complete---------------------------------------------------------------------------------------
 
 
@@ -346,6 +362,8 @@ public class SochService {
         }
         return dataToUpdateInPointSheet;
     }
+
+
 
 
 

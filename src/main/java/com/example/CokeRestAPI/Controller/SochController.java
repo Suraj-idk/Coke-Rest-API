@@ -45,6 +45,13 @@ public class SochController {
             @RequestParam String email,
             @RequestParam String address) throws IOException {
 
+        if (sochService.isPhoneNumberOrEmailAlreadyExists(phoneNumber, email)) {
+            // Return a JSON response with error message and response code 400
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("responseCode", HttpStatus.BAD_REQUEST.value());
+            errorResponse.put("data", "Either Phone Number or Email-Id is already present");
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        }
         String customerId = sochService.generateRandom4Digit();
 
         List<Object> rowData = createRowData(customerId, name, phoneNumber, email, address);
