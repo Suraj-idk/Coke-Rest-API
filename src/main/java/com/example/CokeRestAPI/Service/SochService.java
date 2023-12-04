@@ -208,7 +208,7 @@ public class SochService {
         return result;
     }
 
-    public void updateProductSheetRow(String spreadsheetId, String range, List<List<Object>> updatedData) throws IOException {
+    public void updateSheet(String spreadsheetId, String range, List<List<Object>> updatedData) throws IOException {
         ValueRange body = new ValueRange().setValues(updatedData);
         UpdateValuesResponse result = sheets.spreadsheets().values()
                 .update(spreadsheetId, range, body)
@@ -216,6 +216,138 @@ public class SochService {
                 .execute();
         System.out.println("Data updated in Product sheet: " + result);
     }
+
+//    @Scheduled(cron = "0 0/15 * * * *")
+    public void updateOrderStatusForSoch() {
+        System.out.println("Cron Start");
+        try {
+            // Fetch data directly from Google Sheets
+            ValueRange response = sheets.spreadsheets().values().get(SpreadSheetId, "Soch_Products!A2:H").execute();
+            List<List<Object>> values = response.getValues();
+
+            // Skip if values is null or empty
+            if (values == null || values.isEmpty()) {
+                return;
+            }
+
+            // Update order status for each row
+            for (List<Object> row : values) {
+                // Extract order data
+                String orderId = (String) row.get(0);
+                String orderStatus = (String) row.get(5); //Order Status is in the 6th column (column F)
+
+                // Update order status based on logic
+                String newOrderStatus = getNextOrderStatus(orderStatus);
+
+                // Update the sheet with the new order status
+                List<List<Object>> updateValues = List.of(List.of(newOrderStatus));
+                ValueRange body = new ValueRange().setValues(updateValues);
+
+                sheets.spreadsheets().values()
+                        .update(SpreadSheetId, "Soch_Products!F" + (values.indexOf(row) + 2), body)
+                        .setValueInputOption("RAW")
+                        .execute();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Cron End");
+    }
+
+    private String getNextOrderStatus(String currentOrderStatus) {
+        if ("Preparing for Dispatch".equalsIgnoreCase(currentOrderStatus)) {
+            return "Dispatched";
+        } else if ("Dispatched".equalsIgnoreCase(currentOrderStatus)) {
+            return "In Transit";
+        } else if ("In Transit".equalsIgnoreCase(currentOrderStatus)) {
+            return "Shipped";
+        } else if ("Shipped".equalsIgnoreCase(currentOrderStatus)) {
+            return "Out for Delivery";
+        } else if ("Out for Delivery".equalsIgnoreCase(currentOrderStatus)) {
+            return "Delivered";
+        } else {
+            return currentOrderStatus; // No change if unknown status
+        }
+    }
+
+//-------------------------------------------------------------------------------------Yet to complete---------------------------------------------------------------------------------------
+
+
+    private final Map<String, Integer> customerPointsMap = new HashMap<>();
+
+    //    @Scheduled(cron = "0 */2 * * * *") // Run every 15 minutes
+    public void updatePointsInSheetB() {
+        try {
+            // Read data from Soch_Products
+            List<List<Object>> sheetAData = readFromSheet(SpreadSheetId, "Soch_Products!A:H");
+
+            // Process data and calculate points
+            for (int i = 1; i < sheetAData.size(); i++) {
+                List<Object> row = sheetAData.get(i);
+                String customerId = (String) row.get(0);
+                String orderStatus = (String) row.get(5);
+                boolean isReturned = (Boolean) row.get(6); // to be changed to true.equal
+                boolean isCancelled = (Boolean) row.get(7); // to be changed to true.equal
+                int price = (int) row.get(3);
+
+                if ("Delivered".equalsIgnoreCase(orderStatus) && !isReturned && !isCancelled) {
+                    int pointsEarned = calculatePoints(price);
+                    updateCustomerPoints(customerId, pointsEarned);
+                }
+            }
+
+            // Update pointsSheet with the calculated points
+            updatePointsSheet();
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Handle the exception as needed
+        }
+    }
+
+    private int calculatePoints(int price) {
+        // Customize this method based on your point calculation logic
+        if (price == 499) return 5;
+        else if (price == 599) return 6;
+        else if (price == 999) return 10;
+        else if (price == 1549) return 15;
+        else return 0;  // No points for other prices
+    }
+
+    private void updateCustomerPoints(String customerId, int pointsEarned) {
+        // Check if the customerId already exists in the map
+        if (customerPointsMap.containsKey(customerId)) {
+            // If yes, add the new points to the existing points
+            int currentPoints = customerPointsMap.get(customerId);
+            customerPointsMap.put(customerId, currentPoints + pointsEarned);
+        } else {
+            // If no, add the customerId to the map with the new points
+            customerPointsMap.put(customerId, pointsEarned);
+        }
+    }
+
+    private void updatePointsSheet() throws IOException {
+        String rangeForPointSheet = "Soch_Points!A:B";  // Update with your sheet B range
+
+        // Create the data to be updated in sheet B
+        List<List<Object>> updateDataInPointSheet = newPointSheetData();
+
+        // Update pointsheet using your sochService
+        updateSheet(SpreadSheetId, rangeForPointSheet, updateDataInPointSheet);
+    }
+
+    private List<List<Object>> newPointSheetData() {
+        List<List<Object>> dataToUpdateInPointSheet = new LinkedList<>();
+        for (Map.Entry<String, Integer> entry : customerPointsMap.entrySet()) {
+            List<Object> row = new ArrayList<>();
+            row.add(entry.getKey());   // CustomerId
+            row.add(entry.getValue()); // Total Points
+            dataToUpdateInPointSheet.add(row);
+        }
+        return dataToUpdateInPointSheet;
+    }
+
+
 
 
 
