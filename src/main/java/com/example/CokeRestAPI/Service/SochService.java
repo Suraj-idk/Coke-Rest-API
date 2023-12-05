@@ -168,9 +168,10 @@ public class SochService {
             Object firstColumnValue = row.get(1); // OrderId is in the second column
 
             if (orderId.equalsIgnoreCase(firstColumnValue.toString())
-                    && !"delivered".equalsIgnoreCase(row.get(columnOrder.indexOf("orderStatus")).toString())
-                    && !"True".equals(row.get(columnOrder.indexOf("cancelOrder")))
-                    && !"True".equals(row.get(columnOrder.indexOf("returnOrder")))) {
+//                    && !"delivered".equalsIgnoreCase(row.get(columnOrder.indexOf("orderStatus")).toString())
+//                    && !"True".equals(row.get(columnOrder.indexOf("cancelOrder")))
+//                    && !"True".equals(row.get(columnOrder.indexOf("returnOrder")))
+            ) {
 
                 for (int i = 0; i < columnOrder.size(); i++) {
                     String columnName = columnOrder.get(i);
@@ -191,10 +192,10 @@ public class SochService {
             Object firstColumnValue = row.get(0); // customerId is in the first column
 
             if (customerId.equalsIgnoreCase(firstColumnValue.toString())
-                    && !"delivered".equalsIgnoreCase(row.get(columnOrder.indexOf("orderStatus")).toString())
-                    && !"True".equals(row.get(columnOrder.indexOf("cancelOrder")))
-                    && !"True".equals(row.get(columnOrder.indexOf("returnOrder")))) {
-
+//                    && !"delivered".equalsIgnoreCase(row.get(columnOrder.indexOf("orderStatus")).toString())
+//                    && !"True".equals(row.get(columnOrder.indexOf("cancelOrder")))
+//                    && !"True".equals(row.get(columnOrder.indexOf("returnOrder")))
+            ) {
                 Map<String, Object> rowMap = new LinkedHashMap<>();
                 for (int i = 0; i < columnOrder.size(); i++) {
                     String columnName = columnOrder.get(i);
