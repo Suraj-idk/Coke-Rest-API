@@ -72,7 +72,7 @@ public class SheetsService {
 
             // Check if the current row matches the provided name and phoneNumber
             if (name.equalsIgnoreCase(rowName) && phoneNumber.equalsIgnoreCase(rowPhoneNumber)
-                    && !"delivered".equalsIgnoreCase(row.get(columnOrder.indexOf("orderStatus")).toString())) {
+                    && !"delivered".equalsIgnoreCase(row.get(columnOrder.indexOf("OrderStatus")).toString())) {
                 Map<String, Object> rowData = new LinkedHashMap<>();
                 for (int i = 0; i < columnOrder.size(); i++) {
                     String columnName = columnOrder.get(i);
@@ -93,7 +93,7 @@ public class SheetsService {
 
             // Check if the current row matches the provided orderId
             if (orderId.equalsIgnoreCase(firstColumnValue.toString())
-                    && !"delivered".equalsIgnoreCase(row.get(columnOrder.indexOf("orderStatus")).toString())) {
+                    && !"delivered".equalsIgnoreCase(row.get(columnOrder.indexOf("OrderStatus")).toString())) {
                 for (int i = 0; i < columnOrder.size(); i++) {
                     String columnName = columnOrder.get(i);
                     Object columnValue = row.get(i);
