@@ -134,61 +134,61 @@ public class SheetsService {
         return random4DigitNumber + formattedDate;
     }
 
-//    @Scheduled(cron = "0 0/15 * * * *") // Every 15 minutes
-//    public void updateOrderStatus() {
-//        System.out.println("Cron Start");
-//        try {
-//            // Fetch data directly from Google Sheets
-//            ValueRange response = sheets.spreadsheets().values().get(SpreadSheetId, "Data!A2:J").execute();
-//            List<List<Object>> values = response.getValues();
-//
-//            // Skip if values is null or empty
-//            if (values == null || values.isEmpty()) {
-//                return;
-//            }
-//
-//            // Update order status for each row
-//            for (List<Object> row : values) {
-//                // Extract order data
-//                String orderId = (String) row.get(0);
-//                String orderStatus = (String) row.get(9); //Order Status is in the 10th column (column J)
-//
-//                // Update order status based on logic
-//                String newOrderStatus = getNextOrderStatus(orderStatus);
-//
-//                // Update the sheet with the new order status
-//                List<List<Object>> updateValues = List.of(List.of(newOrderStatus));
-//                ValueRange body = new ValueRange().setValues(updateValues);
-//
-//                sheets.spreadsheets().values()
-//                        .update(SpreadSheetId, "Data!J" + (values.indexOf(row) + 2), body)
-//                        .setValueInputOption("RAW")
-//                        .execute();
-//            }
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        System.out.println("Cron End");
-//    }
-//
-//    private String getNextOrderStatus(String currentOrderStatus) {
-//        if ("Preparing for Dispatch".equalsIgnoreCase(currentOrderStatus)) {
-//            return "Dispatched";
-//        } else if ("Dispatched".equalsIgnoreCase(currentOrderStatus)) {
-//            return "In Transit";
-//        } else if ("In Transit".equalsIgnoreCase(currentOrderStatus)) {
-//            return "Shipped";
-//        } else if ("Shipped".equalsIgnoreCase(currentOrderStatus)) {
-//            return "Out for Delivery";
-//        } else if ("Out for Delivery".equalsIgnoreCase(currentOrderStatus)) {
-//            return "Delivered";
-//        } else {
-//            return currentOrderStatus; // No change if unknown status
-//        }
-//    }
-    @Scheduled(cron = "0 0 10 * * *") // Every day at 10AM
+    @Scheduled(cron = "0 0/15 * * * *") // Every 15 minutes
     public void updateOrderStatus() {
+        System.out.println("Cron Start For 15 minutes");
+        try {
+            // Fetch data directly from Google Sheets
+            ValueRange response = sheets.spreadsheets().values().get(SpreadSheetId, "Data!A2:J").execute();
+            List<List<Object>> values = response.getValues();
+
+            // Skip if values is null or empty
+            if (values == null || values.isEmpty()) {
+                return;
+            }
+
+            // Update order status for each row
+            for (List<Object> row : values) {
+                // Extract order data
+                String orderId = (String) row.get(0);
+                String orderStatus = (String) row.get(9); //Order Status is in the 10th column (column J)
+
+                // Update order status based on logic
+                String newOrderStatus = getNextOrderStatus(orderStatus);
+
+                // Update the sheet with the new order status
+                List<List<Object>> updateValues = List.of(List.of(newOrderStatus));
+                ValueRange body = new ValueRange().setValues(updateValues);
+
+                sheets.spreadsheets().values()
+                        .update(SpreadSheetId, "Data!J" + (values.indexOf(row) + 2), body)
+                        .setValueInputOption("RAW")
+                        .execute();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Cron End");
+    }
+
+    private String getNextOrderStatus(String currentOrderStatus) {
+        if ("Preparing for Dispatch".equalsIgnoreCase(currentOrderStatus)) {
+            return "Dispatched";
+        } else if ("Dispatched".equalsIgnoreCase(currentOrderStatus)) {
+            return "In Transit";
+        } else if ("In Transit".equalsIgnoreCase(currentOrderStatus)) {
+            return "Shipped";
+        } else if ("Shipped".equalsIgnoreCase(currentOrderStatus)) {
+            return "Out for Delivery";
+        } else if ("Out for Delivery".equalsIgnoreCase(currentOrderStatus)) {
+            return "Delivered";
+        } else {
+            return currentOrderStatus; // No change if unknown status
+        }
+    }
+//    @Scheduled(cron = "0 0 10 * * *") // Every day at 10AM
+    public void updateOrderStatus1() {
         System.out.println("Cron Start");
         try {
             // Fetch data directly from Google Sheets
